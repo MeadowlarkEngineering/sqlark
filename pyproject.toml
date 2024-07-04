@@ -1,0 +1,40 @@
+[tool.poetry]
+name = "query-builder"
+version = "0.0.0" # placeholder version (versioning handled by poetry dynamic versioning)
+description = "Builder Pattern for Querying a postgres database"
+authors = ["Joshua Shapiro <jshapiro@meadowlarkengineering.com>"]
+readme = "README.md"
+packages = [{include = "query_builder"}]
+
+[tool.poetry-dynamic-versioning]
+enable = true
+vcs = "git"
+style = "semver"
+bump = true
+
+[tool.poetry.dependencies]
+python = "^3.9"
+psycopg2-binary = "^2.9.5"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^7.2.1"
+pylint = "^2.16.2"
+pytest-postgresql = "^4.1.1"
+pytest-mock = "^3.11.1"
+
+
+[[tool.poetry.source]]
+name = "PyPI"
+priority = "primary"
+
+[tool.pylint]
+max-line-length = 120
+disable = [
+    "R0913", # (too-many-arguments)
+    "R0903", # (too-few-public-methods)
+    "C0103", # (invalid-name)
+    "W0622", # (redefined-builtin)
+    "C3001", # (unnecessary-lambda-assignment)
+    "W0105", # (pointless-string-statement)
+    "R0401", # (cyclic-import)
+]
