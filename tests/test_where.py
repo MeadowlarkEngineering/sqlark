@@ -2,7 +2,6 @@ import pytest
 from psycopg2 import sql
 from query_builder.where import Where
 from query_builder.postgres_config import PostgresConfig
-from query_builder.client import PostgresClient
 
 
 def test_initialize_with_kwargs(pg_connection):

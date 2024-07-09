@@ -34,6 +34,7 @@ class Select(SQLCommand):
         """Table name"""
         return self._table_name
 
+
     def join(self, join: Join | None = None, **kwargs):
         """
         Join another table
