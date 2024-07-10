@@ -62,10 +62,10 @@ class Insert(SQLCommand):
         if self._on_conflict_action.lower() == "nothing":
             action_sql = sql.SQL("DO NOTHING")
         elif self._on_conflict_action.lower() == "update":
-            action_sql = sql.SQL("DO UPDATE SET ({})").format(
+            action_sql = sql.SQL("DO UPDATE SET {}").format(
                 sql.SQL(",").join(
                     [
-                        sql.Composed([col, sql.SQL("=EXCLUDED."), col])
+                        sql.Composed([col, sql.SQL(" = EXCLUDED."), col])
                         for col in update_columns
                     ]
                 )
