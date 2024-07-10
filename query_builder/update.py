@@ -35,9 +35,22 @@ class Update(SQLCommand):
         params:
             values: list The values to update
         """
-        self._values = values
+        if self._values is None:
+            self._values = {}
+
+        for column, value in values.items():
+            self._values[column] = sql.Literal(value)
+
         return self
     
+    def increment(self, column: str, value: int = 1):
+        """
+        Increment a column by a value
+        """
+        if self._values is None:
+            self._values = {}
+        self._values[column] = sql.SQL("{column} + {value}").format(column=sql.Identifier(column), value=sql.Literal(value))
+        return self
 
     def where(self, where: Where | None = None, **kwargs):
         """
@@ -86,7 +99,7 @@ class Update(SQLCommand):
         The columns to update, as extracted from the values
         """
         columns = self._values.keys()
-        
+
         return sorted(columns)
 
     def to_sql(self, pg_config: PostgresConfig) -> sql.SQL:
@@ -98,7 +111,7 @@ class Update(SQLCommand):
         columns = [sql.Identifier(c) for c in self.columns]
 
         # Construct the set sql
-        assignments = [sql.SQL("{}={}").format(sql.Identifier(c), sql.Placeholder()) for c in self.columns]
+        assignments = [sql.SQL("{}={}").format(sql.Identifier(c), self._values[c]) for c in self.columns]
         set_sql = sql.SQL("SET {}").format(sql.SQL(",").join(assignments))
 
         # Construct the where sql
@@ -121,12 +134,11 @@ class Update(SQLCommand):
         """
         Returns the parameters for the where clause
         """
-        params = [self._values[c] for c in self.columns]
 
         if self._where is not None:
-            params.extend(self._where.params)
+           return self._where.params
 
-        return params
+        return []
 
     def execute(self, pg_config: PostgresConfig, transactional=False):
         """
@@ -140,5 +152,5 @@ class Update(SQLCommand):
 
         with pg_config.connect_with_cursor(transactional=transactional) as cursor:
             self.logger.debug(command.as_string(cursor))
-            cursor.execute(command)
+            cursor.execute(command, self.get_params())
             return [dict(r) for r in cursor.fetchall()]
