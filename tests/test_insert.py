@@ -28,4 +28,4 @@ def test_insert_03(pg_connection):
     """
     
     s = Insert(table_name="comments").values([{"author":"Clark Kent", "body":"Up and away!"}]).on_conflict("author", "update")
-    assert s.to_sql(PostgresConfig()).as_string(pg_connection).strip() == 'INSERT INTO "comments" ("author","body") VALUES %s ON CONFLICT ("author") DO UPDATE SET ("author"=EXCLUDED."author","body"=EXCLUDED."body") RETURNING *'
+    assert s.to_sql(PostgresConfig()).as_string(pg_connection).strip() == 'INSERT INTO "comments" ("author","body") VALUES %s ON CONFLICT ("author") DO UPDATE SET "author" = COALESCE(EXCLUDED."author", "author"),"body" = COALESCE(EXCLUDED."body", "body") RETURNING *'
