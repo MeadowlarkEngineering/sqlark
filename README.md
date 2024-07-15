@@ -35,20 +35,20 @@ Select("comments").execute(config)
 Add joins, multiple where clauses, offsets, and limits.
 
 ```python
-s = Select(table_name="posts"). \
-    join(left_table="posts", right_table="authors", left_col="author_id", right_col="id"). \
-    where(table="authors", column="id", operator="=", value=1). \
-    where_and(table="authors", column="created_at", operator=">", value="2024-01-01"). \
-    where_and(table="authors", column="created_at", operator=">", value="2024-01-01"). \
-    limit(10). \
-    offset(5). \
+s = Select(table_name="posts").\
+    join(left_table="posts", right_table="authors", left_col="author_id", right_col="id").\
+    where(table="authors", column="id", operator="=", value=1).\
+    where_and(table="authors", column="created_at", operator=">", value="2024-01-01").\
+    where_and(table="authors", column="created_at", operator=">", value="2024-01-01").\
+    limit(10).\
+    offset(5).\
     order_by("created_at", table="posts")
 result = s.execute(config)
 ```
 
 Insert data
 ```python
-i = Insert(table_name="posts").values([{"author_id": 1, "body": "this is a post"}])
+i = Insert(table_name="posts").values([{"author_id": 1, "body": "this is a post"}]).on_conflict('id', 'update')
 result = i.execute(config)
 ```
 

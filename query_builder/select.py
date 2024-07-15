@@ -22,6 +22,7 @@ class Select(SQLCommand):
         """
         super().__init__()
         self._table_name = table_name
+        self._distinct = None
         self._join = None
         self._where = None
         self._order_by = None
@@ -111,6 +112,18 @@ class Select(SQLCommand):
         )
         return self
 
+    def distinct(self, columns):
+        """
+        Distinct
+        """
+        print(isinstance(columns, str))
+        if isinstance(columns, str):
+            self._distinct = sql.SQL("DISTINCT {}").format(sql.Identifier(columns))
+        else:
+            self._distinct = sql.SQL("DISTINCT {}").format(sql.SQL(", ").join([sql.Identifier(c) for c in columns]))
+
+        return self
+    
     @property
     def order_by_sql(self):
         """
@@ -204,7 +217,7 @@ class Select(SQLCommand):
         command = sql.SQL(
             "SELECT {columns} FROM {table} {join} {where} {order_by} {group_by} {offset} {limit}"
         ).format(
-            columns=columns.join(","),
+            columns=columns.join(",") if self._distinct is None else self._distinct,
             table=sql.Identifier(table_name),
             join=join_sql,
             where=where_sql,

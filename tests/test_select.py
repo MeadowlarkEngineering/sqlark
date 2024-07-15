@@ -239,3 +239,22 @@ def test_select_12(patch, pg_connection):
         'SELECT "comments"."author" as "comments.author","comments"."body" as "comments.body" FROM "comments"   ' +\
         'WHERE "comments"."author" = %s AND ( "comments"."id" > %s OR "comments"."id" < %s )'
     assert s.get_params() == ['Clark Kent', 10, 5]
+
+@mock.patch('query_builder.utilities.get_columns', return_value=['author', 'body'])
+def test_select_13(patch, pg_connection):
+    """
+    Tests distinct
+    """
+    s = Select("comments").distinct("author")
+    assert s.to_sql(PostgresConfig()).as_string(pg_connection).strip() == \
+        'SELECT DISTINCT "author" FROM "comments"'
+    
+@mock.patch('query_builder.utilities.get_columns', return_value=['author', 'body', 'date'])
+def test_select_13(patch, pg_connection):
+    """
+    Tests distinct
+    """
+    s = Select("comments").distinct(["author", "date"])
+    assert s.to_sql(PostgresConfig()).as_string(pg_connection).strip() == \
+        'SELECT DISTINCT "author", "date" FROM "comments"'
+    
