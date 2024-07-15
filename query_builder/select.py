@@ -251,5 +251,7 @@ class Select(SQLCommand):
             self.logger.debug(command.as_string(cursor))
             if params:
                 self.logger.debug(params)
-            cursor.execute(command, params)
+                cursor.execute(command, params)
+            else:
+                cursor.execute(command)
             return [dict(r) for r in cursor.fetchall()]
