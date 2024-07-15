@@ -24,6 +24,12 @@ class Join:
             and "left_col" in kwargs
             and "right_col" in kwargs
         ):
+           self.__init_with_table(**kwargs) 
+
+        elif (
+            "right_table" in kwargs
+            and "on" in kwargs
+        ):
             self.__init_with_table_on(**kwargs)
 
         elif len(args) == 1 and isinstance(args[0], sql.Composable):
@@ -40,7 +46,25 @@ class Join:
         else:
             raise ValueError(f"Invalid initialization of Join with {args} and {kwargs}")
 
-    def __init_with_table_on(
+    def __init_with_table_on(self, right_table: str, on: str, type=INNER):
+        """
+        Keyword initialization. It is important that left_col be a column on the parent table in the select clause
+        and right_col be a column in the right_table declared in this initializer.  The table names are
+        appended to the front of the columns, so mixing these up will result in SQL errors.
+
+        @param {str} right_table The table being joined
+        @param {str} on The ON clause
+        @param {INNER | OUTER} type INNER or OUTER join
+        """
+        self.tables.append(right_table)
+
+        self.sql = sql.SQL("{type} JOIN {right_table} ON {on} ").format(
+            type=sql.SQL(type),
+            right_table=sql.Identifier(right_table),
+            on=sql.SQL(on),
+        )
+        
+    def __init_with_table(
         self,
         left_table: str,
         right_table: str,

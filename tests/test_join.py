@@ -38,3 +38,15 @@ def test_multiple_join(pg_connection):
     
     assert j.sql.as_string(pg_connection) == 'INNER JOIN "posts" ON "comments"."post_id" = "posts"."id" INNER JOIN "authors" ON "comments"."author_id" = "authors"."id" '
     assert j.tables == ['posts', 'authors']
+
+def test_join_on(pg_connection):
+    """
+    tests join on
+    """
+    
+    j = Join(
+            right_table="posts", on="comments.post_id = posts.id"
+        )
+    
+    assert j.sql.as_string(pg_connection) == 'INNER JOIN "posts" ON comments.post_id = posts.id '
+    assert j.tables == ['posts']
