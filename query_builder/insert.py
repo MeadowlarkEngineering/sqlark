@@ -51,11 +51,10 @@ class Insert(SQLCommand):
             return sql.SQL("")
 
         if isinstance(self._on_conflict_constraints, list):
-            constraint = sql.SQL("({})").format(
-                sql.SQL(",").join(
+            constraint =  sql.SQL(",").join(
                     [sql.Identifier(c) for c in self._on_conflict_constraints]
                 )
-            )
+            
         else:
             constraint = sql.Identifier(self._on_conflict_constraints)
 
