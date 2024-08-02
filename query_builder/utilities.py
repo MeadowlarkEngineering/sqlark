@@ -49,6 +49,10 @@ def get_columns(table_name, pg_config: PostgresConfig, use_cache=True) -> list[s
 
         columns = [v["column_name"] for v in result]
         TABLE_COLUMN_CACHE[table_name] = columns
+
+        if len(columns) == 0:
+            raise ValueError(f"Table {table_name} has no columns")
+
         return columns
 
     except Exception as e:
@@ -81,3 +85,17 @@ def get_columns_composed(
             for c in get_columns(table_name, pg_config, use_cache=use_cache)
         ]
     )
+
+
+def data_type_to_field_type(data_type: str) -> type:
+    """
+    Converts a postgres data type to a python data type
+    """
+    data_type_map = {
+        "character varying": str,
+        "text": str,
+        "integer": int,
+        "double precision": float,
+        "timestamp without time zone": datetime,
+    }
+    return data_type_map.get(data_type, str)

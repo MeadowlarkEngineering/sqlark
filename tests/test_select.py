@@ -258,3 +258,13 @@ def test_select_13(patch, pg_connection):
     assert s.to_sql(PostgresConfig()).as_string(pg_connection).strip() == \
         'SELECT DISTINCT "author", "date" FROM "comments"'
     
+
+@mock.patch('query_builder.utilities.get_columns', return_value=['id', 'author', 'body'])
+def test_select_14(patch, pg_connection):
+    """
+    Tests where_in
+    """
+    s = Select("comments").where(column="id", operator="IN", value=[1, 2, 3, 4])
+    assert s.to_sql(PostgresConfig()).as_string(pg_connection).strip() == \
+        'SELECT "comments"."id" as "comments.id","comments"."author" as "comments.author","comments"."body" as "comments.body" FROM "comments"   WHERE "comments"."id" IN %s'
+    assert s.get_params() == [[1, 2, 3, 4]]

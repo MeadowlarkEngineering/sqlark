@@ -101,6 +101,15 @@ class Select(SQLCommand):
             self._where = self._where.sql_or(Where(where, **kwargs))
         return self
 
+    def where_in(self, column, values, table=None):
+        """
+        Appends a where clause using IN
+        """
+        if self._where is None:
+            self._where = Where()
+        self._where.where_in(column, values, table)
+        return self
+
     def order_by(self, column, table=None, direction="ASC"):
         """
         Order by a column
