@@ -6,3 +6,4 @@ from .insert import Insert
 from .where import Where
 from .join import Join
 from .update import Update
+from .delete import Delete
