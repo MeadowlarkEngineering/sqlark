@@ -112,13 +112,28 @@ class Select(SQLCommand):
 
     def order_by(self, column, table=None, direction="ASC"):
         """
-        Order by a column
+        Order by a column or columns
         """
-        self._order_by = sql.SQL("ORDER BY {}.{} {}").format(
-            sql.Identifier(self._table_name if table is None else table),
-            sql.Identifier(column),
-            sql.SQL(direction),
-        )
+        if isinstance(column, str):
+            self._order_by = sql.SQL("ORDER BY {}.{} {}").format(
+                sql.Identifier(self._table_name if table is None else table),
+                sql.Identifier(column),
+                sql.SQL(direction),
+            )
+        if isinstance(column, list):
+            self._order_by = sql.SQL("ORDER BY {}").format(
+                sql.SQL(", ").join(
+                    [
+                        sql.SQL("{table}.{column} {direction}").format(
+                            table=sql.Identifier(self._table_name if table is None else table),
+                            column=sql.Identifier(c),
+                            direction=sql.SQL(direction),
+                        )
+                        for c in column
+                    ]
+                )
+            )
+            
         return self
 
     def distinct(self, columns):

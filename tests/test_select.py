@@ -268,3 +268,23 @@ def test_select_14(patch, pg_connection):
     assert s.to_sql(PostgresConfig()).as_string(pg_connection).strip() == \
         'SELECT "comments"."id" as "comments.id","comments"."author" as "comments.author","comments"."body" as "comments.body" FROM "comments"   WHERE "comments"."id" IN %s'
     assert s.get_params() == [[1, 2, 3, 4]]
+
+
+@mock.patch('query_builder.utilities.get_columns', return_value=['id', 'author', 'body'])
+def test_select_15(patch, pg_connection):
+    """
+    tests select with join where clause, multiple order by
+    """
+    
+    s = Select(table_name="comments"). \
+        join(left_table="comments", right_table="other_comments", left_col='id', right_col='id'). \
+        where(Where(table="comments", column="author", operator="=", value="Clark Kent")). \
+        order_by(["author", "body"])
+    assert s.to_sql(PostgresConfig()).as_string(pg_connection).strip() == (
+        'SELECT "comments"."id" as "comments.id","comments"."author" as "comments.author",' + 
+        '"comments"."body" as "comments.body","other_comments"."id" as "other_comments.id",' + 
+        '"other_comments"."author" as "other_comments.author","other_comments"."body" as "other_comments.body"' +
+        ' FROM "comments" INNER JOIN "other_comments" ON "comments"."id" = "other_comments"."id"' +
+        '   WHERE "comments"."author" = %s ORDER BY "comments"."author" ASC, "comments"."body" ASC'
+    )
+    assert s.get_params() == ['Clark Kent']
