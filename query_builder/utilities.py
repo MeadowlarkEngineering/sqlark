@@ -1,7 +1,7 @@
 """
 Useful standalone mixins
 """
-
+from collections import namedtuple
 import logging
 from psycopg2 import sql
 from query_builder.postgres_config import PostgresConfig
@@ -11,6 +11,7 @@ TABLE_COLUMN_CACHE = {}
 
 logging.basicConfig(level=logging.DEBUG)
 
+ColumnDefinition = namedtuple("ColumnDefinition", ["name", "data_type", "is_nullable","default"])
 
 def get_logger(name):
     """
@@ -31,13 +32,23 @@ def get_columns(table_name, pg_config: PostgresConfig, use_cache=True) -> list[s
     raises:
         ValueError: If the fields could not be retrieved
     """
+    columns = get_column_definitions(table_name, pg_config, use_cache=use_cache)
+    return [c.name for c in columns]
+
+
+def get_column_definitions(table_name, pg_config: PostgresConfig, use_cache=True) -> list[ColumnDefinition]:
+    """
+    Retrieves the column definitions of the table.
+    """
+
     if use_cache and table_name in TABLE_COLUMN_CACHE:
-        return TABLE_COLUMN_CACHE[table_name]
+        return TABLE_COLUMN_CACHE[table_name]    
+
 
     try:
         command = sql.SQL(
             """
-            SELECT column_name 
+            SELECT column_name name, data_type, is_nullable, column_default default
             FROM information_schema.columns 
             WHERE table_name=%s
             """
@@ -47,7 +58,7 @@ def get_columns(table_name, pg_config: PostgresConfig, use_cache=True) -> list[s
             cursor.execute(command, params)
             result = cursor.fetchall()
 
-        columns = [v["column_name"] for v in result]
+        columns = [ColumnDefinition(**v) for v in result]
         TABLE_COLUMN_CACHE[table_name] = columns
 
         if len(columns) == 0:
@@ -59,7 +70,6 @@ def get_columns(table_name, pg_config: PostgresConfig, use_cache=True) -> list[s
         raise ValueError(
             f"Could not retrieve the fields for {table_name} - {str(e)}"
         ) from e
-
 
 def get_columns_composed(
     table_name, pg_config: PostgresConfig, use_cache=True
