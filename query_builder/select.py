@@ -4,7 +4,6 @@ Select query builder
 
 from collections import namedtuple
 from psycopg2 import sql
-from query_builder.utilities import get_logger
 from query_builder.join import Join
 from query_builder.where import Where
 from query_builder.command import SQLCommand
@@ -15,22 +14,18 @@ from query_builder.utilities import (
     decompose_row,
 )
 
-logger = get_logger(__name__)
 
 
 class Select(SQLCommand):
     """Select"""
 
     __slots__ = [
-        "_table_name",
-        "_distinct",
         "_join",
-        "_where",
+        "_distinct",
         "_order_by",
         "_limit",
         "_offset",
         "_group_by",
-        "_respond_with",
     ]
 
     def __init__(self, table_name):
@@ -47,8 +42,6 @@ class Select(SQLCommand):
         self._offset = None
         self._group_by = None
 
-        # Default response is a list of dictionaries
-        self._respond_with = lambda result_set, pg_config: [dict(r) for r in result_set]
 
     @property
     def table_name(self):
@@ -294,82 +287,6 @@ class Select(SQLCommand):
             return []
         return self._where.params
 
-    def respond_with_object(self):
-        """
-        Respond to execute() with an object constructed from the result
-        There is one object per row.
-
-        If the query does not have a join, the object will have attributes for each column in the table.
-
-        If the query has a join, the object will have attributes for each table joined in the query.
-        Each attribute is a class with attributes for each column in the table.
-
-        Example query without join:
-        Select("posts").respond_with_object().execute()
-
-        The result will be a list of objects with the following structure:
-        [
-            Posts(id=1, title="Post 1"),
-            Posts(id=2, title="Post 2")
-        ]
-
-        Example query with join:
-        Select("posts").join("comments").respond_with_object().execute()
-
-        The result will be a list of objects with the following structure:
-        [
-            Row(
-                posts=Posts(id=1, title="Post 1"),
-                comments=Comments(id=1, post_id=1, comment="Comment 1")
-            ),
-            Row(
-                posts=Posts(id=1, title="Post 1"),
-                comments=Comments(id=2, post_id=1, comment="Comment 2")
-            )
-        ]
-        """
-
-        def object_formatter(result_set: list[dict], pg_config: PostgresConfig):
-            table_classes = {
-                self._table_name: dataclass_for_table(self._table_name, pg_config)
-            }
-            decomposed = [decompose_row(r) for r in result_set]
-
-            if self._join is None:
-                # If there is no join, return a list of objects for the primary table for each row
-                return [
-                    table_classes[self._table_name](**row[self._table_name])
-                    for row in decomposed
-                ]
-
-            # If there is a join, create dataclasses for each table in the join
-            for t in self._join.tables:
-                table_classes[t] = dataclass_for_table(t, pg_config)
-
-            Row = namedtuple("Row", table_classes.keys())
-
-            # Looks complex, but it's just a list comprehension that creates a namedtuple for each row
-            return [
-                Row(
-                    **{tab: table_classes[tab](**values) for tab, values in row.items()}
-                )
-                for row in decomposed
-            ]
-
-        self._respond_with = object_formatter
-
-        return self
-
-    def respond_with_decomposed_dict(self):
-        """
-        Respond to execute() with a dictionary of dictionaries.
-        The outer dictionary is keyed by table name.
-        The inner dictionaries are the columns of the table.
-        """
-        self._respond_with = lambda result_set, pg_config: [
-            decompose_row(r) for r in result_set
-        ]
-        return self
 
     def execute(self, pg_config: PostgresConfig, transactional=False):
         """
@@ -389,4 +306,4 @@ class Select(SQLCommand):
             else:
                 cursor.execute(command)
 
-            return self._respond_with(cursor.fetchall(), pg_config)
+            return self._response_formatter(cursor.fetchall(), pg_config, self)

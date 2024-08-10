@@ -136,4 +136,4 @@ class Insert(SQLCommand):
                 template=named_value_template,
                 page_size=1000,
             )
-            return [dict(r) for r in cursor.fetchall()]
+            return self._response_formatter(cursor.fetchall(), pg_config, self)

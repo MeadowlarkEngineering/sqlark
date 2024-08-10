@@ -114,4 +114,4 @@ class Delete(SQLCommand):
         with pg_config.connect_with_cursor(transactional=transactional) as cursor:
             self.logger.debug(command.as_string(cursor))
             cursor.execute(command, self.get_params())
-            return [dict(r) for r in cursor.fetchall()]
+            return self._response_formatter(cursor.fetchall(), pg_config, self)
