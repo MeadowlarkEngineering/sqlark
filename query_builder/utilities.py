@@ -1,17 +1,24 @@
 """
 Useful standalone mixins
 """
+
+from typing import Union
+from dataclasses import make_dataclass
 from collections import namedtuple
+from datetime import datetime
 import logging
 from psycopg2 import sql
 from query_builder.postgres_config import PostgresConfig
 
 TABLE_COLUMN_CACHE = {}
-
+DATACLASS_CACHE = {}
 
 logging.basicConfig(level=logging.DEBUG)
 
-ColumnDefinition = namedtuple("ColumnDefinition", ["name", "data_type", "is_nullable","default"])
+ColumnDefinition = namedtuple(
+    "ColumnDefinition", ["name", "data_type", "is_nullable", "default"]
+)
+
 
 def get_logger(name):
     """
@@ -36,14 +43,15 @@ def get_columns(table_name, pg_config: PostgresConfig, use_cache=True) -> list[s
     return [c.name for c in columns]
 
 
-def get_column_definitions(table_name, pg_config: PostgresConfig, use_cache=True) -> list[ColumnDefinition]:
+def get_column_definitions(
+    table_name, pg_config: PostgresConfig, use_cache=True
+) -> list[ColumnDefinition]:
     """
     Retrieves the column definitions of the table.
     """
 
     if use_cache and table_name in TABLE_COLUMN_CACHE:
-        return TABLE_COLUMN_CACHE[table_name]    
-
+        return TABLE_COLUMN_CACHE[table_name]
 
     try:
         command = sql.SQL(
@@ -71,6 +79,7 @@ def get_column_definitions(table_name, pg_config: PostgresConfig, use_cache=True
             f"Could not retrieve the fields for {table_name} - {str(e)}"
         ) from e
 
+
 def get_columns_composed(
     table_name, pg_config: PostgresConfig, use_cache=True
 ) -> sql.Composed:
@@ -85,8 +94,9 @@ def get_columns_composed(
         ValueError: If the columns could not be retrieved
     """
     format_method = lambda x: sql.SQL("{}.{} as {}").format(
-        sql.Identifier(table_name), sql.Identifier(x),
-        sql.Identifier(f"{table_name}.{x}")
+        sql.Identifier(table_name),
+        sql.Identifier(x),
+        sql.Identifier(f"{table_name}.{x}"),
     )
 
     return sql.Composed(
@@ -97,7 +107,7 @@ def get_columns_composed(
     )
 
 
-def data_type_to_field_type(data_type: str) -> type:
+def data_type_to_field_type(data_type: str, is_nullable: bool = True) -> type:
     """
     Converts a postgres data type to a python data type
     """
@@ -108,4 +118,42 @@ def data_type_to_field_type(data_type: str) -> type:
         "double precision": float,
         "timestamp without time zone": datetime,
     }
+    if is_nullable:
+        return Union[data_type_map.get(data_type, str), None]
+
     return data_type_map.get(data_type, str)
+
+
+def dataclass_for_table(table_name: str, pg_config: PostgresConfig):
+    """
+    Generates a new class for the table with each column as an attribute
+    """
+    if table_name in DATACLASS_CACHE:
+        return DATACLASS_CACHE[table_name]
+
+    column_defs = get_column_definitions(table_name, pg_config)
+
+    fields = [
+        (c.name, data_type_to_field_type(c.data_type, c.is_nullable))
+        for c in column_defs
+    ]
+    DATACLASS_CACHE[table_name] = make_dataclass(table_name.title(), fields)
+    return DATACLASS_CACHE[table_name]
+
+
+def decompose_row(d: dict):
+    """
+    Decomposes the keys of a dictionary that have the format "table_name.column_name"
+    into a dictionary {table_name: {column_name: value, ...}, table_name2: {column_name: value, ...}, ...}
+    """
+    result_d = {}
+    for k, v in d.items():
+        if "." in k:
+            table, column = k.split(".")
+            if table not in result_d:
+                result_d[table] = {}
+            result_d[table][column] = v
+        else:
+            result_d[k] = v
+
+    return result_d
