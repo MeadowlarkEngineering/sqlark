@@ -37,4 +37,5 @@ disable = [
     "C3001", # (unnecessary-lambda-assignment)
     "W0105", # (pointless-string-statement)
     "R0401", # (cyclic-import)
+    "R0801", # (similarities)
 ]

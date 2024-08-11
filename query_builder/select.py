@@ -2,20 +2,15 @@
 Select query builder
 """
 
-from collections import namedtuple
 from psycopg2 import sql
 from query_builder.join import Join
 from query_builder.where import Where
 from query_builder.command import SQLCommand
 from query_builder.postgres_config import PostgresConfig
-from query_builder.utilities import (
-    get_columns_composed,
-    dataclass_for_table,
-    decompose_row,
-)
+from query_builder.utilities import get_columns_composed
 
 
-
+# pylint: disable=too-many-instance-attributes
 class Select(SQLCommand):
     """Select"""
 

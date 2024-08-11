@@ -51,10 +51,10 @@ class Insert(SQLCommand):
             return sql.SQL("")
 
         if isinstance(self._on_conflict_constraints, list):
-            constraint =  sql.SQL(",").join(
-                    [sql.Identifier(c) for c in self._on_conflict_constraints]
-                )
-            
+            constraint = sql.SQL(",").join(
+                [sql.Identifier(c) for c in self._on_conflict_constraints]
+            )
+
         else:
             constraint = sql.Identifier(self._on_conflict_constraints)
 
@@ -64,7 +64,18 @@ class Insert(SQLCommand):
             action_sql = sql.SQL("DO UPDATE SET {}").format(
                 sql.SQL(",").join(
                     [
-                        sql.Composed([col, sql.SQL(" = COALESCE(EXCLUDED."), col, sql.SQL(", "), sql.Identifier(self._table_name), sql.SQL("."), col, sql.SQL(")")])
+                        sql.Composed(
+                            [
+                                col,
+                                sql.SQL(" = COALESCE(EXCLUDED."),
+                                col,
+                                sql.SQL(", "),
+                                sql.Identifier(self._table_name),
+                                sql.SQL("."),
+                                col,
+                                sql.SQL(")"),
+                            ]
+                        )
                         for col in update_columns
                     ]
                 )

@@ -46,7 +46,7 @@ class SQLCommand(ABC):
         """
         self._response_formatter = response_formatters.decompose_dict_response_formatter
         return self
-    
+
     def respond_with_object(self):
         """
         Respond to execute() with an object constructed from the result
@@ -84,4 +84,11 @@ class SQLCommand(ABC):
 
 
         self._response_formatter = response_formatters.object_response_formatter
+        return self
+
+    def respond_with_associated_objects(self, relation_formatter: response_formatters.RelationFormatter):
+        """
+        Respond to execute() with a hierarchical set of objects based on the relations defined in this formatter
+        """
+        self._response_formatter = relation_formatter.format
         return self
