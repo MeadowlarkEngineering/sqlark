@@ -42,8 +42,9 @@ def object_response_formatter(
 
     if not hasattr(command, "_join") or command._join is None:
         # If there is no join, return a list of objects for the primary table for each row
+        # If the decomposed row does not have the table name as a key, use the row as the values
         return [
-            table_classes[command._table_name](**row[command._table_name])
+            table_classes[command._table_name](**(row[command._table_name] if command._table_name in row else row))
             for row in decomposed
         ]
 

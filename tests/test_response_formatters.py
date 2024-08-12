@@ -88,9 +88,30 @@ def test_relation_formatter(_):
     assert formatted_response[0].title == 'Post 1'
     assert formatted_response[1].id == 2
     assert formatted_response[1].title == 'Post 2'
-    
+
     assert formatted_response[0].comments[0].comment == 'Comment 1'
     assert formatted_response[0].comments[1].comment == 'Comment 2'
     assert formatted_response[0].comments[0].author.name == 'Author 1'
     assert formatted_response[0].comments[1].author.name == 'Author 1'
     assert formatted_response[1].comments[0].comment == 'Comment 3'
+
+@mock.patch('query_builder.response_formatters.dataclass_for_table', side_effect=dataclass_for_table)
+def test_object_response_formatter(_):
+    response = [
+        {'table_name.column_name': 'value1'},
+        {'table_name.column_name': 'value2'},
+    ]
+    formatted_response = object_response_formatter(response, None, Select("table_name"))
+    assert formatted_response[0].column_name == 'value1'
+    assert formatted_response[1].column_name == 'value2'
+
+@mock.patch('query_builder.response_formatters.dataclass_for_table', side_effect=dataclass_for_table)
+def test_object_response_formatter_response_to_insert(_):
+    """
+    Tests that the object response formatter can handle an insert response
+    which does not have a table name in the response
+    """
+    response = [{'column_name': 'value'}]
+    formatted_response = object_response_formatter(response, None, Select("table_name"))
+    assert formatted_response[0].column_name == 'value'
+
