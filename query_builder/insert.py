@@ -86,12 +86,16 @@ class Insert(SQLCommand):
         clause = sql.SQL("ON CONFLICT ({}) {}").format(constraint, action_sql)
         return clause
 
-    def values(self, values: list[dict]):
+    def values(self, values: dict | list[dict]):
         """
-        Add values to insert
+        Add values to insert.  The values should be a dictionary or a list of dictionaries if inserting multiple rows.
+        The keys of each dict should be the column names and the values should be the values to insert.
         params:
-            values: list[dict] The values to insert
+            values: dict | list[dict] The values to insert
         """
+        if not isinstance(values, list):
+            values = [values]
+
         self._values = values
         return self
 
