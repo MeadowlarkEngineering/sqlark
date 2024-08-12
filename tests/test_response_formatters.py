@@ -47,6 +47,7 @@ def dataclass_for_table(table_name, pg_config):
     ([{'column_name': 'value'}], [{'column_name': 'value'}]),
     ([{'column_name': 'value', 'table_name.column_name': 'value2'}], [{'column_name': 'value', 'table_name': {'column_name': 'value2'}}]),
     ([{'column_name': 'value', 'table_name.column_name': 'value2', 'table_name2.column_name2': 'value3'}], [{'column_name': 'value', 'table_name': {'column_name': 'value2'}, 'table_name2': {'column_name2': 'value3'}}]),
+    ([{'table_name.column_name': 'value', 'table_name2.column_name': None}], [{'table_name': {'column_name': 'value'}, 'table_name2': {'column_name': None}}]),
 ])
 def test_decompose_dict_response_formatter(response, expected):
     assert decompose_dict_response_formatter(response, None) == expected
@@ -115,3 +116,15 @@ def test_object_response_formatter_response_to_insert(_):
     formatted_response = object_response_formatter(response, None, Select("table_name"))
     assert formatted_response[0].column_name == 'value'
 
+@mock.patch('query_builder.response_formatters.dataclass_for_table', side_effect=dataclass_for_table)
+def test_empty_relation(_):
+    relation_formatter = RelationFormatter().set_relation("posts.comments", "comments")
+    result_set = [
+        {"posts": {'id': 1, 'title': 'Post 1'}, "comments": {'id': None, 'post_id': None, 'comment': None}},
+    ]
+
+    formatted_response = relation_formatter.format(result_set, None, Select("posts"))
+    assert len(formatted_response) == 1
+    assert formatted_response[0].id == 1
+    assert formatted_response[0].title == 'Post 1'
+    assert formatted_response[0].comments == []

@@ -151,6 +151,10 @@ class RelationFormatter:
                     else:
                         obj_cache.append(foreign_obj)
 
+                    # If all attributes of the foreign_obj are None, set the foreign_obj to none
+                    if all(v is None for v in row[foreign_table].values()):
+                        foreign_obj = None
+
                     if hasattr(row_obj, attribute_name):
                         # If the attribute already exists, convert it to a list and append the foreign object to the attribute
                         if relationship_type == "many":
@@ -160,7 +164,7 @@ class RelationFormatter:
                     else:
                         # If the attribute does not exist, create it and set the foreign object as the value
                         if relationship_type == "many":
-                            setattr(row_obj, attribute_name, [foreign_obj])
+                            setattr(row_obj, attribute_name, [foreign_obj] if foreign_obj else [])
                         else:
                             print(
                                 f"Setting {row_obj}.{attribute_name} to {foreign_obj}"
