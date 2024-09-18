@@ -46,7 +46,7 @@ class Join:
         else:
             raise ValueError(f"Invalid initialization of Join with {args} and {kwargs}")
 
-    def __init_with_table_on(self, right_table: str, on: str, type=INNER, left_table=None):
+    def __init_with_table_on(self, right_table: str, on: str, type=INNER, left_table=None, left_col=None):
         """
         Keyword initialization. It is important that left_col be a column on the parent table in the select clause
         and right_col be a column in the right_table declared in this initializer.  The table names are
@@ -55,6 +55,8 @@ class Join:
         @param {str} right_table The table being joined
         @param {str} on The ON clause
         @param {INNER | OUTER} type INNER or OUTER join
+        @param {str} left_table The table joining
+        @param {str} left_col Present for method signature consistency, but not used
         """
         if left_table and left_table not in self.tables:
             self.tables.append(left_table)
