@@ -37,9 +37,11 @@ def get_secret(secret_name, region_name) -> dict:
         raise e
 
     secret = get_secret_value_response['SecretString']
-    cached_secret['secret'] = json.loads(secret)
-    cached_secret['expiration'] = time.time() + cache_expiration_seconds
-
+    cached_secret = {
+        "secret": json.loads(secret),
+        "expiration": time.time() + cache_expiration_seconds
+    }
+    
     return cached_secret['secret']
 
 class PostgresConfig:
