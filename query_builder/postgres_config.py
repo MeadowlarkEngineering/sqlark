@@ -1,6 +1,7 @@
 """
 Postgres Configuration
 """
+import time
 from contextlib import contextmanager
 import json
 import psycopg2
@@ -9,10 +10,16 @@ import boto3
 from botocore.exceptions import ClientError
 
 
+cached_secret = None
+cache_expiration_seconds = 120
+
 def get_secret(secret_name, region_name) -> dict:
     """
     Returns a dictionary with {username, password} for 
     """
+    if cached_secret is not None and cached_secret['expiration'] > time.time():
+        return cached_secret['secret']
+    
     # Create a Secrets Manager client
     session = boto3.session.Session()
     client = session.client(
@@ -30,8 +37,10 @@ def get_secret(secret_name, region_name) -> dict:
         raise e
 
     secret = get_secret_value_response['SecretString']
-    return json.loads(secret)
+    cached_secret['secret'] = json.loads(secret)
+    cached_secret['expiration'] = time.time() + cache_expiration_seconds
 
+    return cached_secret['secret']
 
 class PostgresConfig:
     """
