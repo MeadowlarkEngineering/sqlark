@@ -17,6 +17,7 @@ def get_secret(secret_name, region_name) -> dict:
     """
     Returns a dictionary with {username, password} for 
     """
+    global cached_secret
     if cached_secret is not None and cached_secret['expiration'] > time.time():
         return cached_secret['secret']
     
