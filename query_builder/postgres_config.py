@@ -111,7 +111,14 @@ class PostgresConfig:
             params['port'] = self.port
         return params
 
+    def register_adapters(self):
+        """Register custom adapters"""
+        from psycopg2.extras import Json
+        from psycopg2.extensions import register_adapter
 
+        register_adapter(dict, Json)
+        register_adapter(list, Json)
+        
     @contextmanager
     def connect_with_cursor(self, transactional=False):
         """Connect to database"""
