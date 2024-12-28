@@ -11,7 +11,14 @@ Response formatters accept one required parameters and two optional parameters:
 """
 
 from collections import namedtuple
-from query_builder.utilities import decompose_row, dataclass_for_table
+from dataclasses import make_dataclass, field, dataclass
+from typing import List
+from query_builder.utilities import (
+    decompose_row,
+    dataclass_for_table,
+    get_column_definitions,
+    data_type_to_field_type
+)
 
 
 def default_response_formatter(
@@ -68,6 +75,7 @@ class RelationFormatter:
 
     def __init__(self):
         self._relations = {}
+        self._table_classes = {}
 
     def set_relation(
         self, attribute_name: str, foreign_table: str, relationship_type: str = "many"
@@ -93,6 +101,46 @@ class RelationFormatter:
             relationship_type,
         )
         return self
+    
+    def dataclass_for_table(self, table_name, pg_config):
+        """
+        A custom dataclass_for_table function that adds the relationships defined in this formatter
+        This will not behave well if the table classes have circular references
+        """
+        if table_name in self._table_classes:
+            return self._table_classes[table_name]
+        
+        column_defs = get_column_definitions(table_name, pg_config)
+
+        base_fields = [
+            (c.name, data_type_to_field_type(c.data_type, c.is_nullable))
+            for c in column_defs
+        ]
+        
+        extended_fields = []
+        for (attribute_table, attribute_name), (foreign_table, relationship_type) in self._relations.items():
+            if attribute_table == table_name:
+                foreign_cls = self._table_classes.get(foreign_table, self.dataclass_for_table(foreign_table, pg_config))
+                if relationship_type == "many":
+                    extended_fields.append((attribute_name, List[foreign_cls], field(default_factory=list)))
+                                        
+                else:
+                    extended_fields.append((attribute_name, foreign_cls, field(default=None)))
+        
+        fields = base_fields + extended_fields
+
+        # Create the dataclass with all the fields but no equality method
+        dc = make_dataclass(("Base" + table_name.title()), fields, eq=False)
+        
+        # Add an equality method that compares the base fields
+        def __eq__(self, other):
+            if not isinstance(other, dc):
+                return False
+            return all(getattr(self, f) == getattr(other, f) for f, _ in base_fields)
+            
+        self._table_classes[table_name] = dataclass(type(table_name.title(), (dc,), {"__eq__": __eq__}))
+        return self._table_classes[table_name]
+
 
     def format(
         self, result_set: list[dict], pg_config=None, command=None
@@ -115,7 +163,7 @@ class RelationFormatter:
             for table, values in row.items():
 
                 # Construct the row object for the current table
-                row_obj = dataclass_for_table(table, pg_config)(**values)
+                row_obj = self.dataclass_for_table(table, pg_config)(**values)
 
                 # If the table is the primary table, add the object to the response
                 # otherwise, cache the object for use in relationships
@@ -143,7 +191,7 @@ class RelationFormatter:
                         continue
 
                     # Construct the object for the foreign table
-                    foreign_obj = dataclass_for_table(foreign_table, pg_config)(
+                    foreign_obj = self.dataclass_for_table(foreign_table, pg_config)(
                         **row[foreign_table]
                     )
                     if foreign_obj in obj_cache:
@@ -158,7 +206,8 @@ class RelationFormatter:
                     if hasattr(row_obj, attribute_name):
                         # If the attribute already exists, convert it to a list and append the foreign object to the attribute
                         if relationship_type == "many":
-                            getattr(row_obj, attribute_name).append(foreign_obj)
+                            if foreign_obj:
+                                getattr(row_obj, attribute_name).append(foreign_obj)
                         else:
                             setattr(row_obj, attribute_name, foreign_obj)
                     else:
@@ -166,9 +215,6 @@ class RelationFormatter:
                         if relationship_type == "many":
                             setattr(row_obj, attribute_name, [foreign_obj] if foreign_obj else [])
                         else:
-                            print(
-                                f"Setting {row_obj}.{attribute_name} to {foreign_obj}"
-                            )
                             setattr(row_obj, attribute_name, foreign_obj)
 
         return response
