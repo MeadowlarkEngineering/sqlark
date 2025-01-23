@@ -11,16 +11,16 @@ Response formatters accept one required parameters and two optional parameters:
 """
 
 from collections import namedtuple
-from dataclasses import make_dataclass, field, dataclass
-from typing import List
+from typing import List, Dict
+from query_builder.column_definition import ColumnDefinition
 from query_builder.utilities import (
     decompose_row,
-    dataclass_for_table,
-    get_column_definitions,
-    data_type_to_field_type
+    build_dataclasses,
 )
 
 
+# Disable unused-argument warning for pg_config and command. These arguments exist for consistency
+# pylint: disable=unused-argument
 def default_response_formatter(
     result_set: list[dict], pg_config=None, command=None
 ) -> list[dict]:
@@ -30,6 +30,8 @@ def default_response_formatter(
     return [dict(r) for r in result_set]
 
 
+# Disable unused-argument warning for pg_config and command. These arguments exist for consistency
+# pylint: disable=unused-argument
 def decompose_dict_response_formatter(
     result_set: list[dict], pg_config=None, command=None
 ) -> tuple[list[dict], list[str]]:
@@ -42,23 +44,28 @@ def decompose_dict_response_formatter(
 def object_response_formatter(
     result_set: list[dict], pg_config=None, command=None
 ) -> list[object]:
-    table_classes = {
-        command._table_name: dataclass_for_table(command._table_name, pg_config)
-    }
+    """
+    Returns the result set as a list of objects
+    If the result set contains only one table, the objects will be of that type
+    If the result set contains multiple tables, each row will map to an aggregate obejct
+    with one attribute per table in the result set
+    """
+    if command is None:
+        raise ValueError("Command is required for object_response_formatter")
+
+    if pg_config is None:
+        raise ValueError("pg_config is required for object_response_formatter")
+
+    # Construct the dataclasses for each table in the result set
+    table_classes = build_dataclasses(command.get_column_definitions(pg_config))
     decomposed = [decompose_row(r) for r in result_set]
 
-    if not hasattr(command, "_join") or command._join is None:
-        # If there is no join, return a list of objects for the primary table for each row
-        # If the decomposed row does not have the table name as a key, use the row as the values
-        return [
-            table_classes[command._table_name](**(row[command._table_name] if command._table_name in row else row))
-            for row in decomposed
-        ]
+    if len(table_classes) == 1:
+        # If the result set only contains one table, return a list of objects of that type
+        table, datacls = table_classes.popitem()
+        return [datacls(**(row[table] if table in row else row)) for row in decomposed]
 
-    # If there is a join, create dataclasses for each table in the join
-    for t in command._join.tables:
-        table_classes[t] = dataclass_for_table(t, pg_config)
-
+    # Construct a Row object with one attribute per table in result set
     Row = namedtuple("Row", table_classes.keys())
 
     # Looks complex, but it's just a list comprehension that creates a namedtuple for each row
@@ -85,10 +92,10 @@ class RelationFormatter:
         When formatting results, a new attribute will be added to an object based on the attribute_name
         The value of the attributed will be an object of the foreign_table
 
-        The attribute name is specified as "tablename.attribute" where tablename is the name of the table 
+        The attribute name is specified as "tablename.attribute" where tablename is the name of the table
         that the attribute belongs to
 
-        The relationship_type is the type of relationship between the tables, either "one" or "many", 
+        The relationship_type is the type of relationship between the tables, either "one" or "many",
         default is "many"
         """
         if "." not in attribute_name:
@@ -101,47 +108,37 @@ class RelationFormatter:
             relationship_type,
         )
         return self
-    
-    def dataclass_for_table(self, table_name, pg_config):
+
+    def extended_column_defs(
+        self, command, pg_config
+    ) -> Dict[str, List[ColumnDefinition]]:
         """
-        A custom dataclass_for_table function that adds the relationships defined in this formatter
-        This will not behave well if the table classes have circular references
+        Return the column definitions for the command with the extended fields added for the relationships
         """
-        if table_name in self._table_classes:
-            return self._table_classes[table_name]
-        
-        column_defs = get_column_definitions(table_name, pg_config)
+        # A dictionary of table names mapped to a list of column definitions
+        column_defs: Dict[str, List[ColumnDefinition]] = command.get_column_definitions(
+            pg_config
+        )
 
-        base_fields = [
-            (c.name, data_type_to_field_type(c.data_type, c.is_nullable))
-            for c in column_defs
-        ]
-        
-        extended_fields = []
-        for (attribute_table, attribute_name), (foreign_table, relationship_type) in self._relations.items():
-            if attribute_table == table_name:
-                foreign_cls = self._table_classes.get(foreign_table, self.dataclass_for_table(foreign_table, pg_config))
-                if relationship_type == "many":
-                    extended_fields.append((attribute_name, List[foreign_cls], field(default_factory=list)))
-                                        
-                else:
-                    extended_fields.append((attribute_name, foreign_cls, field(default=None)))
-        
-        fields = base_fields + extended_fields
+        for (attribute_table, attribute_name), (
+            foreign_table,
+            relationship_type,
+        ) in self._relations.items():
 
-        # Create the dataclass with all the fields but no equality method
-        dc = make_dataclass(("Base" + table_name.title()), fields, eq=False)
-        
-        # Add an equality method that compares the base fields
-        def __eq__(self, other):
-            if not isinstance(other, dc):
-                return False
-            return all(getattr(self, f) == getattr(other, f) for f, _ in base_fields)
-            
-        self._table_classes[table_name] = dataclass(type(table_name.title(), (dc,), {"__eq__": __eq__}))
-        return self._table_classes[table_name]
+            column_defs[attribute_table].append(
+                ColumnDefinition(
+                    table_name=attribute_table,
+                    name=attribute_name,
+                    data_type=foreign_table,
+                    is_nullable=True,
+                    default=None,
+                    is_list=relationship_type == "many",
+                )
+            )
 
+        return column_defs
 
+    # pylint: disable=too-many-locals,too-many-branches,too-many-nested-blocks
     def format(
         self, result_set: list[dict], pg_config=None, command=None
     ) -> list[object]:
@@ -157,17 +154,22 @@ class RelationFormatter:
             result_set, pg_config, command
         )
 
+        # Construct the dataclasses for the response
+        self._table_classes = build_dataclasses(
+            self.extended_column_defs(command, pg_config)
+        )
+
         obj_cache = []  # a cache of objects that have already been created
         response = []
         for row in decomposed_rows:
             for table, values in row.items():
 
                 # Construct the row object for the current table
-                row_obj = self.dataclass_for_table(table, pg_config)(**values)
+                row_obj = self._table_classes[table](**values)
 
                 # If the table is the primary table, add the object to the response
                 # otherwise, cache the object for use in relationships
-                if table == command._table_name:
+                if table == command.table_name:
                     response_obj = next((r for r in response if r == row_obj), None)
                     if response_obj is None:
                         # If the root object is not already in the response, add it
@@ -191,7 +193,7 @@ class RelationFormatter:
                         continue
 
                     # Construct the object for the foreign table
-                    foreign_obj = self.dataclass_for_table(foreign_table, pg_config)(
+                    foreign_obj = self._table_classes[foreign_table](
                         **row[foreign_table]
                     )
                     if foreign_obj in obj_cache:
@@ -204,7 +206,8 @@ class RelationFormatter:
                         foreign_obj = None
 
                     if hasattr(row_obj, attribute_name):
-                        # If the attribute already exists, convert it to a list and append the foreign object to the attribute
+                        # If the attribute already exists, convert it to a list and
+                        # append the foreign object to the attribute
                         if relationship_type == "many":
                             if foreign_obj:
                                 getattr(row_obj, attribute_name).append(foreign_obj)
@@ -213,8 +216,11 @@ class RelationFormatter:
                     else:
                         # If the attribute does not exist, create it and set the foreign object as the value
                         if relationship_type == "many":
-                            setattr(row_obj, attribute_name, [foreign_obj] if foreign_obj else [])
+                            setattr(
+                                row_obj,
+                                attribute_name,
+                                [foreign_obj] if foreign_obj else [],
+                            )
                         else:
                             setattr(row_obj, attribute_name, foreign_obj)
-
         return response

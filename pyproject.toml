@@ -4,7 +4,7 @@ version = "0.0.0" # placeholder version (versioning handled by poetry dynamic ve
 description = "Builder Pattern for Querying a postgres database"
 authors = ["Joshua Shapiro <jshapiro@meadowlarkengineering.com>"]
 readme = "README.md"
-packages = [{include = "query_builder"}]
+packages = [{include = "query_builder", from = "src"}]
 
 [tool.poetry-dynamic-versioning]
 enable = true
@@ -19,7 +19,7 @@ boto3 = "^1.35.29"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.2.1"
-pylint = "^2.16.2"
+pylint = "^3.0.4"
 pytest-postgresql = "^4.1.1"
 pytest-mock = "^3.11.1"
 
@@ -32,6 +32,7 @@ priority = "primary"
 max-line-length = 120
 disable = [
     "R0913", # (too-many-arguments)
+    "R0917", # (too-many-positional-arguments)
     "R0903", # (too-few-public-methods)
     "C0103", # (invalid-name)
     "W0622", # (redefined-builtin)

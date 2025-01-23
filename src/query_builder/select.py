@@ -2,19 +2,22 @@
 Select query builder
 """
 
+from typing import List, Dict
 from psycopg2 import sql
 from query_builder.join import Join
 from query_builder.where import Where
 from query_builder.command import SQLCommand
 from query_builder.postgres_config import PostgresConfig
-from query_builder.utilities import get_columns_composed
+from query_builder.utilities import get_columns_composed, get_column_definitions
+from query_builder.column_definition import ColumnDefinition
 
 
-# pylint: disable=too-many-instance-attributes
+# pylint: disable=too-many-instance-attributes,too-many-public-methods
 class Select(SQLCommand):
     """Select"""
 
     __slots__ = [
+        "_table_name",
         "_join",
         "_distinct",
         "_order_by",
@@ -37,11 +40,36 @@ class Select(SQLCommand):
         self._offset = None
         self._group_by = None
 
-
     @property
     def table_name(self):
         """Table name"""
         return self._table_name
+
+    def get_column_definitions(self, pg_config) -> Dict[str, List[ColumnDefinition]]:
+        """
+        Returns a dictionary with tablenames (keys) mapped to list of column definition objects.
+        """
+        col_defs = super().get_column_definitions(pg_config)
+
+        # Add the join table column definitions
+        join = self.get_join()
+        if join is not None:
+            for t in join.tables:
+                col_defs[t] = get_column_definitions(t, pg_config)
+
+        return col_defs
+
+    def get_columns(self, table_name, pg_config):
+        """The sql formatted columns to use building the query"""
+        columns = get_columns_composed(table_name, pg_config)
+
+        # Construct the join sql
+        join = self.get_join()
+        if join is not None:
+            for t in join.tables:
+                columns = columns + get_columns_composed(t, pg_config)
+
+        return columns
 
     def join(self, join: Join | None = None, **kwargs):
         """
@@ -159,7 +187,6 @@ class Select(SQLCommand):
         """
         Distinct
         """
-        print(isinstance(columns, str))
         if isinstance(columns, str):
             self._distinct = sql.SQL("DISTINCT {}").format(sql.Identifier(columns))
         else:
@@ -234,15 +261,12 @@ class Select(SQLCommand):
         Overrides the SQLCommand to_sql method
         """
         table_name = self.table_name
-        columns = get_columns_composed(table_name, pg_config)
+        columns = self.get_columns(table_name, pg_config)
 
         # Construct the join sql
         join = self.get_join()
         if join is not None:
             join_sql = join.sql
-            # Add joined table columns to select
-            for t in join.tables:
-                columns = columns + get_columns_composed(t, pg_config)
         else:
             join_sql = sql.SQL("")
 
@@ -281,7 +305,6 @@ class Select(SQLCommand):
         if self._where is None:
             return []
         return self._where.params
-
 
     def execute(self, pg_config: PostgresConfig, transactional=False):
         """
