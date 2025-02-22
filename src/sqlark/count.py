@@ -4,10 +4,10 @@ Count query builder
 
 from typing import Dict, List
 from psycopg2 import sql
-from query_builder.column_definition import ColumnDefinition
-from query_builder.select import Select
-from query_builder.postgres_config import PostgresConfig
-from query_builder.utilities import get_column_definitions
+from sqlark.column_definition import ColumnDefinition
+from sqlark.select import Select
+from sqlark.postgres_config import PostgresConfig
+from sqlark.utilities import get_column_definitions
 
 
 class Count(Select):
@@ -46,9 +46,9 @@ class Count(Select):
         for table, column in self._group_by_columns:
             defs = get_column_definitions(table, pg_config)
             col_def = next((d for d in defs if d.name == column), None)
-            if table in col_definitions:
+            if table in col_definitions and col_def is not None:
                 col_definitions[table].append(col_def)
-            else:
+            elif col_def is not None:
                 col_definitions[table] = [col_def]
 
         return col_definitions
