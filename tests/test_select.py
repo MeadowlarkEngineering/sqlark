@@ -110,7 +110,7 @@ def test_select_05a(patch, pg_connection):
     )
     assert (
         s.to_sql(PostgresConfig()).as_string(pg_connection).strip()
-        == 'SELECT "comments"."author" as "comments.author","comments"."body" as "comments.body" FROM "comments"   WHERE "comments"."author" = %s ORDER BY "comments"."author" ASC OFFSET 5 LIMIT 10'
+        == 'SELECT "comments"."author" as "comments.author","comments"."body" as "comments.body" FROM "comments"   WHERE "comments"."author" = %s ORDER BY "comments"."author" ASC  OFFSET 5 LIMIT 10'
     )
     assert s.get_params() == ["Clark Kent"]
 
