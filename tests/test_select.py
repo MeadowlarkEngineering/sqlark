@@ -3,10 +3,35 @@ Unit testing for Select SQLCommand
 """
 
 from unittest import mock
-from sqlark import Select, Where, Join, PostgresConfig
+from sqlark import Select, Where, Join, PostgresConfig, ColumnDefinition
 
 
-@mock.patch("sqlark.utilities.get_columns", return_value=["author", "body"])
+def mock_column_definitions(*args):
+    """
+    Mock function to return column definitions
+    """
+
+    def mock_get_columns(table_name, pg_config, use_cache):
+        return [
+            ColumnDefinition(
+                table_name=table_name,
+                name=arg,
+                data_type="text",
+                is_nullable=True,
+                default=None,
+                function=None,
+                alias=None,
+            )
+            for arg in args
+        ]
+
+    return mock_get_columns
+
+
+@mock.patch(
+    "sqlark.utilities.get_column_definitions",
+    side_effect=mock_column_definitions("author", "body"),
+)
 def test_select_01(patch, pg_connection):
     """
     tests simple initialization
@@ -20,7 +45,10 @@ def test_select_01(patch, pg_connection):
     assert s.get_params() == []
 
 
-@mock.patch("sqlark.utilities.get_columns", return_value=["author", "body"])
+@mock.patch(
+    "sqlark.utilities.get_column_definitions",
+    side_effect=mock_column_definitions("author", "body"),
+)
 def test_select_02(patch, pg_connection):
     """
     tests select with where clause
@@ -36,7 +64,10 @@ def test_select_02(patch, pg_connection):
     assert s.get_params() == ["Clark Kent"]
 
 
-@mock.patch("sqlark.utilities.get_columns", return_value=["author", "body"])
+@mock.patch(
+    "sqlark.utilities.get_column_definitions",
+    side_effect=mock_column_definitions("author", "body"),
+)
 def test_select_02a(patch, pg_connection):
     """
     tests select with where clause using kwargs
@@ -52,7 +83,10 @@ def test_select_02a(patch, pg_connection):
     assert s.get_params() == ["Clark Kent"]
 
 
-@mock.patch("sqlark.utilities.get_columns", return_value=["author", "body"])
+@mock.patch(
+    "sqlark.utilities.get_column_definitions",
+    side_effect=mock_column_definitions("author", "body"),
+)
 def test_select_03(patch, pg_connection):
     """
     tests select with where clause and limit
@@ -72,7 +106,10 @@ def test_select_03(patch, pg_connection):
     assert s.get_params() == ["Clark Kent"]
 
 
-@mock.patch("sqlark.utilities.get_columns", return_value=["author", "body"])
+@mock.patch(
+    "sqlark.utilities.get_column_definitions",
+    side_effect=mock_column_definitions("author", "body"),
+)
 def test_select_04(patch, pg_connection):
     """
     tests select with where clause, limit, and offset
@@ -93,7 +130,10 @@ def test_select_04(patch, pg_connection):
     assert s.get_params() == ["Clark Kent"]
 
 
-@mock.patch("sqlark.utilities.get_columns", return_value=["author", "body"])
+@mock.patch(
+    "sqlark.utilities.get_column_definitions",
+    side_effect=mock_column_definitions("author", "body"),
+)
 def test_select_05a(patch, pg_connection):
     """
     tests select with where clause, limit, offset, and order by
@@ -115,7 +155,10 @@ def test_select_05a(patch, pg_connection):
     assert s.get_params() == ["Clark Kent"]
 
 
-@mock.patch("sqlark.utilities.get_columns", return_value=["author", "body"])
+@mock.patch(
+    "sqlark.utilities.get_column_definitions",
+    side_effect=mock_column_definitions("author", "body"),
+)
 def test_select_05b(patch, pg_connection):
     """
     tests select with where clause, limit, offset, and order by
@@ -138,7 +181,10 @@ def test_select_05b(patch, pg_connection):
     assert s.get_params() == ["Clark Kent"]
 
 
-@mock.patch("sqlark.utilities.get_columns", return_value=["id", "author", "body"])
+@mock.patch(
+    "sqlark.utilities.get_column_definitions",
+    side_effect=mock_column_definitions("id", "author", "body"),
+)
 def test_select_06(patch, pg_connection):
     """
     tests select with join where clause, limit, offset, order by
@@ -170,7 +216,10 @@ def test_select_06(patch, pg_connection):
     assert s.get_params() == ["Clark Kent"]
 
 
-@mock.patch("sqlark.utilities.get_columns", return_value=["id", "author", "body"])
+@mock.patch(
+    "sqlark.utilities.get_column_definitions",
+    side_effect=mock_column_definitions("id", "author", "body"),
+)
 def test_select_07(patch, pg_connection):
     """
     tests select with join where clause, limit, offset, order by
@@ -201,7 +250,10 @@ def test_select_07(patch, pg_connection):
     assert s.get_params() == ["Clark Kent"]
 
 
-@mock.patch("sqlark.utilities.get_columns", return_value=["id", "author", "body"])
+@mock.patch(
+    "sqlark.utilities.get_column_definitions",
+    side_effect=mock_column_definitions("id", "author", "body"),
+)
 def test_select_08(patch, pg_connection):
     """
     tests select with join where clause, limit, offset, order by
@@ -232,7 +284,10 @@ def test_select_08(patch, pg_connection):
     assert s.get_params() == ["Clark Kent"]
 
 
-@mock.patch("sqlark.utilities.get_columns", return_value=["id", "author", "body"])
+@mock.patch(
+    "sqlark.utilities.get_column_definitions",
+    side_effect=mock_column_definitions("id", "author", "body"),
+)
 def test_select_09(patch, pg_connection):
     j1 = Join(
         left_table="posts", right_table="comments", left_col="id", right_col="post_id"
@@ -255,7 +310,10 @@ def test_select_09(patch, pg_connection):
     )
 
 
-@mock.patch("sqlark.utilities.get_columns", return_value=["id", "author", "body"])
+@mock.patch(
+    "sqlark.utilities.get_column_definitions",
+    side_effect=mock_column_definitions("id", "author", "body"),
+)
 def test_select_10(patch, pg_connection):
     s = (
         Select(table_name="posts")
@@ -283,7 +341,10 @@ def test_select_10(patch, pg_connection):
     )
 
 
-@mock.patch("sqlark.utilities.get_columns", return_value=["author", "body"])
+@mock.patch(
+    "sqlark.utilities.get_column_definitions",
+    side_effect=mock_column_definitions("author", "body"),
+)
 def test_select_11(patch, pg_connection):
     """
     tests select with multiple where clause
@@ -303,7 +364,10 @@ def test_select_11(patch, pg_connection):
     assert s.get_params() == ["Clark Kent", 5]
 
 
-@mock.patch("sqlark.utilities.get_columns", return_value=["author", "body"])
+@mock.patch(
+    "sqlark.utilities.get_column_definitions",
+    side_effect=mock_column_definitions("author", "body"),
+)
 def test_select_12(patch, pg_connection):
     """
     tests select with multiple where clause
@@ -323,7 +387,10 @@ def test_select_12(patch, pg_connection):
     assert s.get_params() == ["Clark Kent", 5]
 
 
-@mock.patch("sqlark.utilities.get_columns", return_value=["author", "body"])
+@mock.patch(
+    "sqlark.utilities.get_column_definitions",
+    side_effect=mock_column_definitions("author", "body"),
+)
 def test_select_12a(patch, pg_connection):
     """
     tests select with multiple where clause
@@ -344,7 +411,10 @@ def test_select_12a(patch, pg_connection):
     assert s.get_params() == ["Clark Kent", 10, 5]
 
 
-@mock.patch("sqlark.utilities.get_columns", return_value=["author", "body"])
+@mock.patch(
+    "sqlark.utilities.get_column_definitions",
+    side_effect=mock_column_definitions("author", "body"),
+)
 def test_select_12b(patch, pg_connection):
     """
     tests select with multiple where clause
@@ -368,7 +438,10 @@ def test_select_12b(patch, pg_connection):
     assert s.get_params() == ["Clark Kent", 10, 5]
 
 
-@mock.patch("sqlark.utilities.get_columns", return_value=["author", "body"])
+@mock.patch(
+    "sqlark.utilities.get_column_definitions",
+    side_effect=mock_column_definitions("author", "body"),
+)
 def test_select_13a(patch, pg_connection):
     """
     Tests distinct
@@ -380,7 +453,10 @@ def test_select_13a(patch, pg_connection):
     )
 
 
-@mock.patch("sqlark.utilities.get_columns", return_value=["author", "body", "date"])
+@mock.patch(
+    "sqlark.utilities.get_column_definitions",
+    side_effect=mock_column_definitions("author", "body", "date"),
+)
 def test_select_13b(patch, pg_connection):
     """
     Tests distinct
@@ -392,7 +468,10 @@ def test_select_13b(patch, pg_connection):
     )
 
 
-@mock.patch("sqlark.utilities.get_columns", return_value=["id", "author", "body"])
+@mock.patch(
+    "sqlark.utilities.get_column_definitions",
+    side_effect=mock_column_definitions("id", "author", "body"),
+)
 def test_select_14(patch, pg_connection):
     """
     Tests where_in
@@ -405,7 +484,10 @@ def test_select_14(patch, pg_connection):
     assert s.get_params() == [[1, 2, 3, 4]]
 
 
-@mock.patch("sqlark.utilities.get_columns", return_value=["id", "author", "body"])
+@mock.patch(
+    "sqlark.utilities.get_column_definitions",
+    side_effect=mock_column_definitions("id", "author", "body"),
+)
 def test_select_15(patch, pg_connection):
     """
     tests select with join where clause, multiple order by

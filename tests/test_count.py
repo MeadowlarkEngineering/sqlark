@@ -2,6 +2,7 @@
 Test count builder
 """
 
+from sqlark.column_definition import ColumnDefinition
 from sqlark.count import Count
 
 
@@ -50,3 +51,22 @@ def test_count_05(pg_connection):
         count.to_sql(pg_connection).as_string(pg_connection).strip()
         == 'SELECT COUNT(*) as "table1.count","table1"."c1" as "table1.c1","table1"."c2" as "table1.c2" FROM "table1" INNER JOIN "table2" ON "table1"."id" = "table2"."table1_id"    GROUP BY "table1"."c1","table1"."c2"'
     )
+
+
+def test_count_06(pg_connection):
+    count = Count("table1")
+    count.group_by(
+        "c1",
+        ColumnDefinition(
+            table_name="table1",
+            name="created_at",
+            data_type="datetime",
+            alias="created_at_day",
+            function="date_trunc('day', created_at)",
+        ),
+    )
+    assert (
+        count.to_sql(pg_connection).as_string(pg_connection).strip()
+        == 'SELECT COUNT(*) as "table1.count","table1"."c1" as "table1.c1",date_trunc(\'day\', created_at) "created_at_day" FROM "table1"    GROUP BY "table1"."c1",date_trunc(\'day\', created_at)'
+    )
+    assert count.get_params() == []
