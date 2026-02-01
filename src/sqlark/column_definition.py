@@ -12,6 +12,7 @@ class ColumnDefinition:
     Represents a column definition
     """
 
+    # pylint: disable=too-many-instance-attributes
     table_name: str
     name: str
     data_type: str
@@ -22,10 +23,20 @@ class ColumnDefinition:
     function: str | None = None
 
     def __post_init__(self):
+        """
+        Post-initialization to set default alias if not provided
+        """
         if self.alias is None:
             self.alias = f"{self.table_name}.{self.name}"
 
     def format_with_alias(self) -> sql.Composed:
+        """
+        Format the column definition with alias
+
+        :param self: Description
+        :return: Description
+        :rtype: Composed
+        """
         if self.function:
             return sql.SQL("{} {}").format(
                 sql.SQL(self.function),
@@ -39,6 +50,13 @@ class ColumnDefinition:
         )
 
     def format_without_alias(self) -> sql.Composed:
+        """
+        Format the column definition without alias
+
+        :param self: Description
+        :return: Description
+        :rtype: Composed
+        """
         if self.function:
             return sql.SQL("{}").format(
                 sql.SQL(self.function),
