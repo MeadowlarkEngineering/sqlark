@@ -29,14 +29,31 @@ class ColumnDefinition:
         if self.alias is None:
             self.alias = f"{self.table_name}.{self.name}"
 
+    def column_name_from_alias(self) -> str:
+        """
+        Extract the column name from the alias
+        If the alias is in the format "table_name.column_name", return "column_name"
+        Otherwise, return the alias as is
+        """
+        if self.alias and "." in self.alias:
+            return self.alias.split(".")[1]
+        if self.alias:
+            return self.alias
+        return self.name
+
     def format_with_alias(self) -> sql.Composed:
         """
-        Format the column definition with alias
+        Format the column definition with alias.
+        If no alias was provided, use table_name.column_name as the alias.
 
         :param self: Description
         :return: Description
         :rtype: Composed
         """
+
+        if not self.alias:
+            raise ValueError("Alias must be set for format_with_alias")
+
         if self.function:
             return sql.SQL("{} {}").format(
                 sql.SQL(self.function),

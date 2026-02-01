@@ -194,7 +194,10 @@ def build_dataclasses(
             continue
 
         fields = [
-            (c.name, data_type_to_field_type(c.data_type, c.is_nullable))
+            (
+                c.column_name_from_alias(),
+                data_type_to_field_type(c.data_type, c.is_nullable),
+            )
             for c in columns
         ]
         built_classes[class_name] = make_dataclass(class_name.title(), fields)

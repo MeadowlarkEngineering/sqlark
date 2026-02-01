@@ -3,7 +3,7 @@ from dataclasses import asdict
 from unittest import mock
 from pytest import mark
 from dataclasses import dataclass
-from sqlark import Select
+from sqlark import Select, Count
 from sqlark.utilities import ColumnDefinition
 from sqlark.response_formatters import (
     decompose_dict_response_formatter,
@@ -429,6 +429,19 @@ def test_object_response_formatter_response_to_insert(p1, pg_connection):
     )
     assert formatted_response[0].column_name == "value"
     assert formatted_response[0].column2 == "value2"
+
+
+def test_object_response_formatter_for_count(pg_connection):
+    """
+    Tests that the object response formatter can handle a count response
+    which does not have a table name in the response
+    """
+    response = [{"table_name.count": 5, "table_name.status": "active"}]
+    formatted_response = object_response_formatter(
+        response, pg_connection, Count("table_name").group_by("status")
+    )
+    assert formatted_response[0].count == 5
+    assert formatted_response[0].status == "active"
 
 
 @mock.patch(

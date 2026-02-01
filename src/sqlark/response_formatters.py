@@ -10,6 +10,7 @@ Response formatters accept one required parameters and two optional parameters:
     command: Optional[SQLCommand] The command that generated the result set
 """
 
+import typing
 from collections import namedtuple
 from typing import List, Dict
 from sqlark.column_definition import ColumnDefinition
@@ -17,6 +18,10 @@ from sqlark.utilities import (
     decompose_row,
     build_dataclasses,
 )
+
+if typing.TYPE_CHECKING:
+    from sqlark.postgres_config import PostgresConfig
+    from sqlark.command import SQLCommand
 
 
 # Disable unused-argument warning for pg_config and command. These arguments exist for consistency
@@ -45,7 +50,9 @@ def decompose_dict_response_formatter(
 
 
 def object_response_formatter(
-    result_set: list[dict], pg_config=None, command=None
+    result_set: list[dict],
+    pg_config: "PostgresConfig | None" = None,
+    command: "SQLCommand | None" = None,
 ) -> list[object]:
     """
     Returns the result set as a list of objects
