@@ -121,17 +121,10 @@ def get_columns_composed(
         ValueError: If the columns could not be retrieved
     """
 
-    def format_method(x):
-        return sql.SQL("{}.{} as {}").format(
-            sql.Identifier(table_name),
-            sql.Identifier(x),
-            sql.Identifier(f"{table_name}.{x}"),
-        )
-
     return sql.Composed(
         [
-            format_method(c)
-            for c in get_columns(table_name, pg_config, use_cache=use_cache)
+            c.format_with_alias()
+            for c in get_column_definitions(table_name, pg_config, use_cache=use_cache)
         ]
     )
 
