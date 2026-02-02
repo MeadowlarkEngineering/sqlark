@@ -45,11 +45,13 @@ class ColumnDefinition:
 
     def format_with_alias(self) -> sql.Composed:
         """
-        Format the column definition with alias.
-        If no alias was provided, use table_name.column_name as the alias.
+        Format the column definition with an alias.
 
-        :param self: Description
-        :return: Description
+        This method assumes that ``self.alias`` has already been set
+        (typically by ``__post_init__``). If ``alias`` is not set when this
+        method is called, a :class:`ValueError` is raised.
+
+        :return: A composed SQL expression selecting the column with its alias
         :rtype: Composed
         """
 
