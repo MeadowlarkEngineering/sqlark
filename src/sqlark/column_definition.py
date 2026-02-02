@@ -28,6 +28,8 @@ class ColumnDefinition:
         """
         if self.alias is None:
             self.alias = f"{self.table_name}.{self.name}"
+        elif self.alias and "." not in self.alias:
+            self.alias = f"{self.table_name}.{self.alias}"
 
     def column_name_from_alias(self) -> str:
         """

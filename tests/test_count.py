@@ -67,6 +67,23 @@ def test_count_06(pg_connection):
     )
     assert (
         count.to_sql(pg_connection).as_string(pg_connection).strip()
-        == 'SELECT COUNT(*) as "table1.count","table1"."c1" as "table1.c1",date_trunc(\'day\', created_at) "created_at_day" FROM "table1"    GROUP BY "table1"."c1",date_trunc(\'day\', created_at)'
+        == 'SELECT COUNT(*) as "table1.count","table1"."c1" as "table1.c1",date_trunc(\'day\', created_at) "table1.created_at_day" FROM "table1"    GROUP BY "table1"."c1",date_trunc(\'day\', created_at)'
     )
     assert count.get_params() == []
+
+    # Ensure that the column definitions are correct
+    col_defs = count.get_column_definitions(pg_connection)
+    assert "table1" in col_defs
+    cols = col_defs["table1"]
+    assert len(cols) == 3
+    assert cols[0].column_name_from_alias() == "count"
+    assert cols[0].function == "COUNT"
+    assert cols[0].alias == "table1.count"
+    assert cols[1].column_name_from_alias() == "c1"
+    assert cols[1].table_name == "table1"
+    assert cols[1].function is None
+    assert cols[1].alias == "table1.c1"
+    assert cols[2].column_name_from_alias() == "created_at_day"
+    assert cols[2].table_name == "table1"
+    assert cols[2].function == "date_trunc('day', created_at)"
+    assert cols[2].alias == "table1.created_at_day"
