@@ -28,15 +28,36 @@ class ColumnDefinition:
         """
         if self.alias is None:
             self.alias = f"{self.table_name}.{self.name}"
+        elif self.alias and "." not in self.alias:
+            self.alias = f"{self.table_name}.{self.alias}"
+
+    def column_name_from_alias(self) -> str:
+        """
+        Extract the column name from the alias
+        If the alias is in the format "table_name.column_name", return "column_name"
+        Otherwise, return the alias as is
+        """
+        if self.alias and "." in self.alias:
+            return self.alias.split(".")[1]
+        if self.alias:
+            return self.alias
+        return self.name
 
     def format_with_alias(self) -> sql.Composed:
         """
-        Format the column definition with alias
+        Format the column definition with an alias.
 
-        :param self: Description
-        :return: Description
+        This method assumes that ``self.alias`` has already been set
+        (typically by ``__post_init__``). If ``alias`` is not set when this
+        method is called, a :class:`ValueError` is raised.
+
+        :return: A composed SQL expression selecting the column with its alias
         :rtype: Composed
         """
+
+        if not self.alias:
+            raise ValueError("Alias must be set for format_with_alias")
+
         if self.function:
             return sql.SQL("{} {}").format(
                 sql.SQL(self.function),

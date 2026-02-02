@@ -26,15 +26,15 @@ class Select(SQLCommand):
         "_group_by",
     ]
 
-    def __init__(self, table_name):
+    def __init__(self, table_name: str):
         """
         Perpare a select query using table_name as the primary table
         """
         super().__init__()
-        self._table_name = table_name
-        self._distinct = None
-        self._join = None
-        self._where = None
+        self._table_name: str = table_name
+        self._distinct: sql.Composed | None = None
+        self._join: Join | None = None
+        self._where: Where | None = None
         self._order_by = None
         self._limit = None
         self._offset = None
@@ -59,7 +59,7 @@ class Select(SQLCommand):
 
         return col_defs
 
-    def get_columns(self, table_name, pg_config):
+    def get_columns(self, table_name: str, pg_config: PostgresConfig) -> sql.Composed:
         """The sql formatted columns to use building the query"""
         columns = get_columns_composed(table_name, pg_config)
 
