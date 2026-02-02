@@ -450,7 +450,7 @@ for item in result:
 author_ids = [1, 2, 3, 4, 5]
 
 result = Select("posts")\
-    .where_in(column="author_id", values=author_ids)\
+    .where(column="author_id", operator="IN", value=author_ids)\
     .execute(config)
 ```
 
