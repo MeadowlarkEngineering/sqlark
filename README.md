@@ -335,11 +335,19 @@ The `RelationFormatter` transforms flat database results into nested structures:
 ```python
 from sqlark import Select, PostgresConfig
 from sqlark.response_formatters import RelationFormatter
+import os
 
-# Configure database connection (use environment variables in production)
-config = PostgresConfig(dbname="blog", user="postgres", password="your_password")
+# Configure database connection (using environment variables for security)
+config = PostgresConfig(
+    dbname="blog",
+    user=os.environ.get("DB_USER"),
+    password=os.environ.get("DB_PASSWORD")
+)
 
 # Create formatter with multi-level relationships
+# This example shows posts with their author (one-to-one),
+# posts with their comments (one-to-many),
+# and each comment with its author (one-to-one)
 formatter = RelationFormatter()\
     .set_relation("posts.comments", "comments", relationship_type="many")\
     .set_relation("posts.author", "authors", relationship_type="one")\
