@@ -36,6 +36,16 @@ config = PostgresConfig(
 )
 ```
 
+> **Security Note**: In production environments, avoid hardcoding credentials. Use environment variables or secure configuration management instead:
+> ```python
+> import os
+> config = PostgresConfig(
+>     dbname=os.environ.get("DB_NAME"),
+>     user=os.environ.get("DB_USER"),
+>     password=os.environ.get("DB_PASSWORD")
+> )
+> ```
+
 ### Basic Queries
 
 #### Simple SELECT
@@ -80,7 +90,6 @@ Join multiple tables together:
 ```python
 result = Select("posts")\
     .join(
-        left_table="posts",
         right_table="authors",
         left_col="author_id",
         right_col="id"
@@ -89,6 +98,8 @@ result = Select("posts")\
     .execute(config)
 # Returns both posts.* and authors.* columns
 ```
+
+> **Note**: The `left_table` parameter defaults to the primary table (the one specified in `Select()`), and `left_col` defaults to `"id"`. You can omit these parameters when joining from the primary table with its `id` column.
 
 ### INSERT, UPDATE, and DELETE
 
