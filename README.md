@@ -336,7 +336,8 @@ The `RelationFormatter` transforms flat database results into nested structures:
 from sqlark import Select, PostgresConfig
 from sqlark.response_formatters import RelationFormatter
 
-config = PostgresConfig(dbname="blog", user="postgres", password="password")
+# Configure database connection (use environment variables in production)
+config = PostgresConfig(dbname="blog", user="postgres", password="your_password")
 
 # Create formatter with multi-level relationships
 formatter = RelationFormatter()\
