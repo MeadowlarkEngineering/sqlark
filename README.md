@@ -11,12 +11,12 @@ Example Query:
 
 Using pip
 ```sh
-pip install git+https://github.com/MeadowlarkEngineering/sqlark.git#egg=sqlark
+pip install sqlark
 ```
 
 Using poetry
 ```sh
-poetry add git+https://github.com/MeadowlarkEngineering/sqlark.git
+poetry add sqlark
 ```
 
 ### Usage
