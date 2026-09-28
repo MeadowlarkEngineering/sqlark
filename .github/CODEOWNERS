@@ -1,0 +1,10 @@
+# Routes review requests to the MeadowBot reviewer.
+#
+# MeadowBot is a GitHub App, and apps cannot be requested as reviewers directly,
+# so each managed repository assigns the `meadowbot` team here. Opening a PR then
+# auto-requests that team, which is what triggers the bot's review.
+#
+# This repository needed it more than most: main requires one approving review and
+# no reviewer was available, so PRs sat for eight months with green CI - including
+# one whose author could not approve their own work. See MeadowBot#44.
+* @MeadowlarkEngineering/meadowbot
