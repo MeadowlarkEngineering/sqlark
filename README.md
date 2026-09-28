@@ -1,4 +1,4 @@
-# Query Builder
+# sqlark
 
 A lightweight wrapper around psycopg2 for creating queries using a builder pattern.
 
@@ -11,12 +11,12 @@ Example Query:
 
 Using pip
 ```sh
-pip install git+https://github.com/MeadowlarkEngineering/query-builder.git#egg=query-builder
+pip install sqlark
 ```
 
 Using poetry
 ```sh
-poetry add git+https://github.com/MeadowlarkEngineering/query-builder.git
+poetry add sqlark
 ```
 
 ### Usage
@@ -26,7 +26,7 @@ poetry add git+https://github.com/MeadowlarkEngineering/query-builder.git
 Select everything from a table.
 
 ```python
-from query_builder import PostgresConfig, Select
+from sqlark import PostgresConfig, Select
 config = PostgresConfig(dbname="blog", user="postgres-username", password="postgres-password)
 Select("comments").execute(config)
 > [{'id': 1, 'text': "A comment"}]
